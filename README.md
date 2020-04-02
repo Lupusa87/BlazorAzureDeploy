@@ -14,3 +14,6 @@ BlazorAzureDeploy.exe -d E:\wwwroot -e .dll .wasm .js .png .jpg .css .json .pdb 
 You can check options and code to see how it works.
 
 More detailed documentation will be added later.
+
+
+PR's are very welcome.
