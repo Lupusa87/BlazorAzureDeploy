@@ -1,4 +1,4 @@
-# BlazorAzureDeploy
+# Blazor Azure Deploy
 
 
 This is console application convenient utility for blazor webassembly fast deploy to azure storage static site.
