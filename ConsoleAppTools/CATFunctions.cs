@@ -29,7 +29,6 @@ namespace ConsoleAppTools
                 DrawTextProgressBar();
             }
 
-
             //Thread.Sleep(150);
         }
 
