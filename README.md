@@ -3,7 +3,7 @@
 
 This is console application convenient utility for blazor webassembly fast deploy to azure storage static site.
 
-After publishing app from Visual studio we can use it to upload files to storage, also will gzip files and set content types, encodyng and do some other good stuff.
+After publishing app from Visual studio we can use it to upload files to storage, also will gzip files and set content types, encoding and do some other good stuff.
 
 We won't need anymore to use Visual studio code for deploy.
 
