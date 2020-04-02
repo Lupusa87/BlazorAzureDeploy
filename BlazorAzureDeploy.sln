@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29924.181
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BlazorAzureDeploy", "BlazorAzureDeploy\BlazorAzureDeploy.csproj", "{BE7F4E57-BF30-4523-9313-CE8E501FD796}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleAppTools", "ConsoleAppTools\ConsoleAppTools.csproj", "{CDB8ABAA-31CF-4665-83F4-B649BDDB08B3}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{BE7F4E57-BF30-4523-9313-CE8E501FD796}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BE7F4E57-BF30-4523-9313-CE8E501FD796}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BE7F4E57-BF30-4523-9313-CE8E501FD796}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BE7F4E57-BF30-4523-9313-CE8E501FD796}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CDB8ABAA-31CF-4665-83F4-B649BDDB08B3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CDB8ABAA-31CF-4665-83F4-B649BDDB08B3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CDB8ABAA-31CF-4665-83F4-B649BDDB08B3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CDB8ABAA-31CF-4665-83F4-B649BDDB08B3}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {DBD45646-8DFD-4846-B201-22F2FF6597EC}
+	EndGlobalSection
+EndGlobal
