@@ -27,7 +27,8 @@ namespace BlazorAzureDeploy
             DirectoryInfo dirInfo = new DirectoryInfo(SourceDir);
 
             //step 1
-            DeleteUnnecessaryFilesFromSourceDir(dirInfo);
+            DeleteUnnecessaryFilesFromSourceDir(dirInfo,".gz");
+            DeleteUnnecessaryFilesFromSourceDir(dirInfo, ".br");
 
             IEnumerable<FileInfo> fileslist = dirInfo.GetFiles("*", SearchOption.AllDirectories);
 
@@ -90,15 +91,14 @@ namespace BlazorAzureDeploy
 
                     byte[] compressedBytes;
 
-
-                    CATFunctions.Print("Gzip file - " + filePath);
+                    CATFunctions.Print("Compress file - " + filePath);
 
                     using (MemoryStream memoryStream = new MemoryStream())
                     {
-                        using (var gzipStream = new GZipStream(memoryStream, CompressionMode.Compress))
+                        using (var brotliStream = new BrotliStream(memoryStream, CompressionMode.Compress))
                         using (var blobStream = fileInfo.OpenRead())
                         {
-                            blobStream.CopyTo(gzipStream);
+                            blobStream.CopyTo(brotliStream);
                         }
 
                         compressedBytes = memoryStream.ToArray();
@@ -107,10 +107,12 @@ namespace BlazorAzureDeploy
                         blob.UploadFromByteArray(compressedBytes, 0, compressedBytes.Length);
 
                         blob.Properties.CacheControl = cacheControlHeader;
-                        blob.Properties.ContentEncoding = "gzip";
+                        blob.Properties.ContentEncoding = "br";
                         blob.Properties.ContentType = contentType;
                         blob.SetProperties();
                     }
+
+                 
                 }
                 else
                 {
@@ -131,15 +133,15 @@ namespace BlazorAzureDeploy
           
         }
 
-        public static void DeleteUnnecessaryFilesFromSourceDir(DirectoryInfo dirInfo)
+        public static void DeleteUnnecessaryFilesFromSourceDir(DirectoryInfo dirInfo, string ext)
         {
-            IEnumerable<FileInfo> fileslist = dirInfo.GetFiles("*", SearchOption.AllDirectories).Where(x => x.Extension.Equals(".gz"));
+            IEnumerable<FileInfo> fileslist = dirInfo.GetFiles("*", SearchOption.AllDirectories).Where(x => x.Extension.Equals(ext));
 
             if (fileslist.Any())
             {
                 CATFunctions.Print("======!!!!!!! Warning !!!!!!=======", true, false);
-                CATFunctions.Print("Found " + fileslist.Count() + " files with extension .gz");
-                CATFunctions.Print(".gz files are not necessary for deploy.", false, true);
+                CATFunctions.Print("Found " + fileslist.Count() + " files with extension " + ext);
+                CATFunctions.Print(ext +" files are not necessary for deploy.", false, true);
 
                 foreach (var item in fileslist)
                 {
