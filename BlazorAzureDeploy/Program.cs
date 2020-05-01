@@ -56,7 +56,8 @@ namespace BlazorAzureDeploy
                 opts.Extensions,
                 opts.MaxAgeSeconds,
                 opts.DefaultContenType,
-                opts.ClearContainer);
+                opts.ClearContainer,
+                opts.ExcludeDirs);
 
            
             if (opts.Wildcard)

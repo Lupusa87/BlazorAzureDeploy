@@ -51,5 +51,10 @@ namespace BlazorAzureDeploy
           HelpText = "Clear or not container before upload.")]
         public bool ClearContainer { get; set; }
 
+
+        [Option('p', "excludeDirs", Required = false,
+           HelpText = "Excluded dirs will not be uploaded.")]
+        public IEnumerable<string> ExcludeDirs { get; set; }
+
     }
 }

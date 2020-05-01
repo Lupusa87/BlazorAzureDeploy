@@ -19,7 +19,8 @@ namespace BlazorAzureDeploy
                                        IEnumerable<string> extensions,
                                        int cacheControlMaxAgeSeconds,
                                        string defaultContenType,
-                                       bool clearContainer)
+                                       bool clearContainer,
+                                       IEnumerable<string> excludeDirs)
         {
 
           
@@ -30,7 +31,7 @@ namespace BlazorAzureDeploy
             DeleteUnnecessaryFilesFromSourceDir(dirInfo,".gz");
             DeleteUnnecessaryFilesFromSourceDir(dirInfo, ".br");
 
-            IEnumerable<FileInfo> fileslist = dirInfo.GetFiles("*", SearchOption.AllDirectories);
+            List<FileInfo> fileslist = dirInfo.GetFiles("*", SearchOption.AllDirectories).ToList();
 
             //step 2
             ReportFilesWithNoExtension(fileslist);
@@ -45,6 +46,13 @@ namespace BlazorAzureDeploy
             }
 
             //step 5
+            if (excludeDirs.Any())
+            {
+                fileslist.RemoveAll(x=>excludeDirs.Any(y=> y.ToLower().Equals(x.Directory.FullName.ToLower())));
+            }
+
+
+            //step 6
             UploadFiles(SourceDir, container, fileslist, extensions, cacheControlMaxAgeSeconds);
 
 
