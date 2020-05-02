@@ -8,6 +8,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Reflection;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 
 namespace BlazorAzureDeploy
@@ -48,13 +49,22 @@ namespace BlazorAzureDeploy
             //step 5
             if (excludeDirs.Any())
             {
-                fileslist.RemoveAll(x=>excludeDirs.Any(y=> y.ToLower().Equals(x.Directory.FullName.ToLower())));
+                fileslist.RemoveAll(x => excludeDirs.Any(y => y.ToLower().Equals(x.Directory.FullName.ToLower())));
             }
 
 
             //step 6
             UploadFiles(SourceDir, container, fileslist, extensions, cacheControlMaxAgeSeconds);
 
+            //step 7
+            List<string> allExtensions = fileslist.Select(x => x.Extension.ToLower()).Distinct().ToList();
+
+            CATFunctions.Print(string.Empty,true);
+            foreach (var item in allExtensions.Where(x=>!extensions.Any(y => y.ToLower().Equals(x))))
+            {
+                CATFunctions.Print(item + " extension was not compressed, is this ok?????????????????????");
+            }
+            CATFunctions.Print(string.Empty, true);
 
         }
 

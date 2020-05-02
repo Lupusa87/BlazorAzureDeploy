@@ -5,7 +5,7 @@ VisualStudioVersion = 16.0.29924.181
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BlazorAzureDeploy", "BlazorAzureDeploy\BlazorAzureDeploy.csproj", "{BE7F4E57-BF30-4523-9313-CE8E501FD796}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleAppTools", "ConsoleAppTools\ConsoleAppTools.csproj", "{CDB8ABAA-31CF-4665-83F4-B649BDDB08B3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConsoleAppTools", "ConsoleAppTools\ConsoleAppTools.csproj", "{CDB8ABAA-31CF-4665-83F4-B649BDDB08B3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
