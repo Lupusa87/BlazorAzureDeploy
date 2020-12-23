@@ -61,44 +61,7 @@ namespace BlazorAzureDeploy
             //step 6 sync or upload
             if (syncContainer)
             {
-
-                var blobs = container.GetBlobs().ToList();
-
-                List<string> localFilesList = new();
-                foreach (var item in fileslist)
-                {
-                    localFilesList.Add(GetFilePath(SourceDir, item).Replace(@"\", "/"));
-                }
-
-                SyncDeleteObsoletedBlobs(container, blobs, localFilesList);
-
-                List<FileInfo> ShouldRemoveFileInfos = new();
-                foreach (var item in fileslist)
-                {
-                    if (blobs.Any(x => x.Name.Equals(GetFilePath(SourceDir, item).Replace(@"\", "/"), StringComparison.InvariantCultureIgnoreCase)))
-                    {
-                        ShouldRemoveFileInfos.Add(item);
-                    }
-                    else
-                    {
-                        CATFunctions.Print("?????? Should be uploaded file " + GetFilePath(SourceDir, item).Replace(@"\", "/"));
-                    }
-                }
-
-
-                foreach (var item in ShouldRemoveFileInfos)
-                {
-                    fileslist.Remove(item);
-                }
-
-
-
-
-                if (fileslist.Any())
-                {
-                    UploadFiles(SourceDir, container, fileslist, extensions, cacheControlMaxAgeSeconds);
-                }
-
+                SyncFiles(SourceDir, container, fileslist, extensions, cacheControlMaxAgeSeconds);
             }
             else
             {
@@ -117,9 +80,64 @@ namespace BlazorAzureDeploy
 
         }
 
+        public static void SyncFiles(string SourceDir,
+                                 BlobContainerClient container,
+                                 List<FileInfo> fileslist,
+                                 IEnumerable<string> extensions,
+                                 int cacheControlMaxAgeSeconds)
+        {
 
 
-        public static void UploadFiles(string SourceDir,
+            var blobs = container.GetBlobs().ToList();
+
+
+            List<string> localFilesList = new();
+            foreach (var item in fileslist)
+            {
+                localFilesList.Add(GetFilePath(SourceDir, item, false).Replace(@"\", "/"));
+            }
+
+            //will also delete blobs which should be updated because their names in local folder are changed with prefix - shouldupdate_
+            SyncDeleteObsoletedBlobs(container, blobs, localFilesList);
+
+            List<FileInfo> ShouldRemoveFileInfos = new();
+            foreach (var item in fileslist.Where(x=> !x.Name.Contains("shouldupdate_")))
+            {
+                if (blobs.Any(x => x.Name.Equals(GetFilePath(SourceDir, item, true).Replace(@"\", "/"), StringComparison.InvariantCultureIgnoreCase)))
+                {
+                    ShouldRemoveFileInfos.Add(item);
+                }
+
+            }
+
+
+            foreach (var item in ShouldRemoveFileInfos)
+            {
+                fileslist.Remove(item);
+            }
+
+            if (fileslist.Any(x => x.Name.Contains("shouldupdate_")))
+            {
+                
+                foreach (var item in fileslist.Where(x => x.Name.Contains("shouldupdate_")))
+                {
+                    //shouldupdate_ will be removed from name and updated regular way.
+                    item.MoveTo(item.FullName.Replace("shouldupdate_", null));
+                   
+                }
+            }
+
+
+
+
+
+            if (fileslist.Any())
+            {
+                UploadFiles(SourceDir, container, fileslist, extensions, cacheControlMaxAgeSeconds);
+            }
+        }
+
+            public static void UploadFiles(string SourceDir,
                                  BlobContainerClient container,
                                  IEnumerable<FileInfo> fileslist,
                                  IEnumerable<string> extensions,
@@ -142,7 +160,7 @@ namespace BlazorAzureDeploy
 
                 ContentTypeHelper.CurrentContentTypes.TryGetValue(fileInfo.Extension, out string contentType);
 
-                string filePath = GetFilePath(SourceDir, fileInfo);
+                string filePath = GetFilePath(SourceDir, fileInfo, true);
 
                 BlobClient blob = container.GetBlobClient(filePath);
 
@@ -375,12 +393,21 @@ namespace BlazorAzureDeploy
 
         }
 
-        public static string GetFilePath(string SourceDir, FileInfo fi)
+        public static string GetFilePath(string SourceDir, FileInfo fi, bool replaceShouldUpdate)
         {
 
             int SourceDirLenght = SourceDir.Length + 1;
 
-            return fi.FullName.Substring(SourceDirLenght, fi.FullName.Length - SourceDirLenght);
+            string result = fi.FullName.Substring(SourceDirLenght, fi.FullName.Length - SourceDirLenght);
+
+
+            if (replaceShouldUpdate)
+            {
+                return result.Replace("shouldupdate_", null);
+            }
+
+
+            return result;
         }
 
 
