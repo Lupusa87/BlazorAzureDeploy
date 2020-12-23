@@ -1,7 +1,6 @@
-﻿using ConsoleAppTools;
-using Microsoft.Azure.Storage;
-using Microsoft.Azure.Storage.Blob;
-using Microsoft.Azure.Storage.Shared.Protocol;
+﻿using Azure.Storage.Blobs;
+using Azure.Storage.Blobs.Models;
+using ConsoleAppTools;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -16,11 +15,12 @@ namespace BlazorAzureDeploy
     static class Utility
     {
         public static void Process(string SourceDir,
-                                       CloudBlobContainer container,
+                                       BlobContainerClient container,
                                        IEnumerable<string> extensions,
                                        int cacheControlMaxAgeSeconds,
                                        string defaultContenType,
-                                       bool clearContainer,
+                                       bool? clearContainer,
+                                       bool syncContainer,
                                        IEnumerable<string> excludeDirs)
         {
 
@@ -41,10 +41,16 @@ namespace BlazorAzureDeploy
             EnsureContentTypes(fileslist, defaultContenType);
 
             //step 4
-            if (clearContainer)
+            if (clearContainer.HasValue)
             {
-                EmptyContainer(container);
+                if (clearContainer.Value)
+                {
+                    EmptyContainer(container);
+                }
             }
+
+
+           
 
             //step 5
             if (excludeDirs.Any())
@@ -53,8 +59,52 @@ namespace BlazorAzureDeploy
             }
 
 
-            //step 6
-            UploadFiles(SourceDir, container, fileslist, extensions, cacheControlMaxAgeSeconds);
+            //step 6 sync or upload
+            if (syncContainer)
+            {
+
+                var blobs = container.GetBlobs().ToList();
+
+                List<string> localFilesList = new();
+                foreach (var item in fileslist)
+                {
+                    localFilesList.Add(GetFilePath(SourceDir, item).Replace(@"\", "/"));
+                }
+
+                SyncDeleteObsoletedBlobs(container,blobs, localFilesList);
+
+                List<FileInfo> ShouldRemoveFileInfos = new();
+                foreach (var item in fileslist)
+                {
+                    if (blobs.Any(x=>x.Name.Equals(GetFilePath(SourceDir, item).Replace(@"\", "/"), StringComparison.InvariantCultureIgnoreCase)))
+                    {
+                        ShouldRemoveFileInfos.Add(item);
+                    }
+                    else
+                    {
+                        CATFunctions.Print("?????? Should be uploaded file " + GetFilePath(SourceDir, item).Replace(@"\", "/"));
+                    }
+                }
+
+
+                foreach (var item in ShouldRemoveFileInfos)
+                {
+                    fileslist.Remove(item);
+                }
+
+                
+
+
+                if (fileslist.Any())
+                {
+                    UploadFiles(SourceDir, container, fileslist, extensions, cacheControlMaxAgeSeconds);
+                }
+
+            }
+            else
+            {
+                UploadFiles(SourceDir, container, fileslist, extensions, cacheControlMaxAgeSeconds);
+            }
 
             //step 7
             List<string> allExtensions = fileslist.Select(x => x.Extension.ToLower()).Distinct().ToList();
@@ -71,14 +121,11 @@ namespace BlazorAzureDeploy
 
 
         public static void UploadFiles(string SourceDir,
-                                 CloudBlobContainer container,
+                                 BlobContainerClient container,
                                  IEnumerable<FileInfo> fileslist,
                                  IEnumerable<string> extensions,
                                  int cacheControlMaxAgeSeconds)
         {
-
-            int SourceDirLenght = SourceDir.Length + 1;
-
 
             string cacheControlHeader = "public, max-age=" + cacheControlMaxAgeSeconds.ToString();
 
@@ -92,42 +139,53 @@ namespace BlazorAzureDeploy
             Parallel.ForEach(fileslist, (fileInfo) =>
             {
                 CATFunctions.Progress();
-               
-                string contentType;
 
-                ContentTypeHelper.CurrentContentTypes.TryGetValue(fileInfo.Extension, out contentType);
 
-                string filePath = GetFilePath(SourceDirLenght, fileInfo);
+                ContentTypeHelper.CurrentContentTypes.TryGetValue(fileInfo.Extension, out string contentType);
 
-                CloudBlockBlob blob = container.GetBlockBlobReference(filePath);
+                string filePath = GetFilePath(SourceDir, fileInfo);
 
+                BlobClient blob = container.GetBlobClient(filePath);
 
                 if (extensions.Contains(fileInfo.Extension, StringComparer.OrdinalIgnoreCase))
                 {
 
 
 
-                    byte[] compressedBytes;
+                   
 
                     CATFunctions.Print("Compress file - " + filePath);
-
+                    
                     using (MemoryStream memoryStream = new MemoryStream())
                     {
-                        using (var brotliStream = new BrotliStream(memoryStream, CompressionMode.Compress))
-                        using (var blobStream = fileInfo.OpenRead())
-                        {
-                            blobStream.CopyTo(brotliStream);
+                        using (var brotliStream = new BrotliStream(memoryStream, CompressionMode.Compress, true))
+                        
+                            using (var blobStream = fileInfo.OpenRead())
+                            {
+                                blobStream.CopyTo(brotliStream);
+
+                            
                         }
 
-                        compressedBytes = memoryStream.ToArray();
+
+                        memoryStream.Position = 0;
+                        blob.Upload(memoryStream);
+
+
+
 
                         CATFunctions.Print("uploading file - " + filePath);
-                        blob.UploadFromByteArray(compressedBytes, 0, compressedBytes.Length);
 
-                        blob.Properties.CacheControl = cacheControlHeader;
-                        blob.Properties.ContentEncoding = "br";
-                        blob.Properties.ContentType = contentType;
-                        blob.SetProperties();
+
+                        BlobHttpHeaders headers = new()
+                        {
+
+                            ContentType = contentType,
+                            ContentEncoding = "br",
+                            CacheControl = cacheControlHeader,
+                        };
+
+                        blob.SetHttpHeadersAsync(headers);
                     }
 
                  
@@ -136,12 +194,17 @@ namespace BlazorAzureDeploy
                 {
 
                     CATFunctions.Print("uploading file - " + filePath);
-                    blob.UploadFromFile(fileInfo.FullName);
+                    blob.Upload(fileInfo.FullName);
 
 
-                    blob.Properties.CacheControl = cacheControlHeader;
-                    blob.Properties.ContentType = contentType;
-                    blob.SetProperties();
+                    BlobHttpHeaders headers = new()
+                    {
+
+                        ContentType = contentType,
+                        CacheControl = cacheControlHeader,
+                    };
+
+                    blob.SetHttpHeadersAsync(headers);
                 }
             });
 
@@ -150,6 +213,9 @@ namespace BlazorAzureDeploy
             CATFunctions.FinishProgress();
           
         }
+
+
+    
 
         public static void DeleteUnnecessaryFilesFromSourceDir(DirectoryInfo dirInfo, string ext)
         {
@@ -164,7 +230,7 @@ namespace BlazorAzureDeploy
                 foreach (var item in fileslist)
                 {
                     File.Delete(item.FullName);
-                    CATFunctions.Print("Deleting - " + item.FullName);
+                    CATFunctions.Print("Deleting local file - " + item.FullName);
                 }
             }
         }
@@ -187,28 +253,64 @@ namespace BlazorAzureDeploy
         }
 
 
-public static void EmptyContainer(CloudBlobContainer container)
+
+        public static void SyncDeleteObsoletedBlobs(BlobContainerClient container, List<BlobItem> blobs, List<string> localFilesList)
+        {
+
+            
+            List<string> ShouldDeleteBlobs = new();
+
+            foreach (var item in blobs)
+            {
+                if (!localFilesList.Any(x => x.Equals(item.Name, StringComparison.InvariantCultureIgnoreCase)))
+                {
+                    CATFunctions.Print("!!!!!!!!!!!!! should delete      " + item.Name, true, false);
+                    ShouldDeleteBlobs.Add(item.Name);
+                }
+            }
+
+            CATFunctions.Print("Deleting blobs not existing localy (" + ShouldDeleteBlobs.Count() + ")", true, false);
+            CATFunctions.ShowProgress(ShouldDeleteBlobs.Count());
+            CATFunctions.StartSubProcess("Deleting blobs not existing localy...");
+
+
+            Parallel.ForEach(ShouldDeleteBlobs, (blobName) =>
+            {
+                
+                container.DeleteBlob(blobName, DeleteSnapshotsOption.IncludeSnapshots);
+
+                CATFunctions.Progress();
+                CATFunctions.Print("Deleting blob " + blobName);
+            });
+
+
+            CATFunctions.Print("Container is cleared from obsoleted blobs", true, true);
+
+
+
+            CATFunctions.EndSubProcess();
+            CATFunctions.FinishProgress();
+
+        }
+
+
+        public static void EmptyContainer(BlobContainerClient container)
         {
 
            
 
-            var blobInfos = container.ListBlobs(null, true, BlobListingDetails.None);
+            var blobs = container.GetBlobs();
+           
+
+            CATFunctions.Print("Deleting old blobs (" + blobs.Count() + ")", true, false);
+            CATFunctions.ShowProgress(blobs.Count());
+            CATFunctions.StartSubProcess("Deleting old blobs...");
 
 
-            CATFunctions.Print("Deleting old files (" + blobInfos.Count() + ")", true, false);
-            CATFunctions.ShowProgress(blobInfos.Count());
-            CATFunctions.StartSubProcess("Deleting old files...");
-
-
-
-            
-
-
-            Parallel.ForEach(blobInfos, (blobInfo) =>
+            Parallel.ForEach(blobs, (blob) =>
             {
 
-                CloudBlob blob = (CloudBlob)blobInfo;
-                blob.Delete();
+                container.DeleteBlob(blob.Name, DeleteSnapshotsOption.IncludeSnapshots);
 
                 CATFunctions.Progress();
                 CATFunctions.Print("Deleting blob " + blob.Name);
@@ -274,37 +376,15 @@ public static void EmptyContainer(CloudBlobContainer container)
 
         }
 
-        public static string GetFilePath(int SourceDirLenght, FileInfo fi)
-        {            
+        public static string GetFilePath(string SourceDir, FileInfo fi)
+        {
+
+            int SourceDirLenght = SourceDir.Length + 1;
+
             return fi.FullName.Substring(SourceDirLenght, fi.FullName.Length  - SourceDirLenght);
         }
 
-        public static void SetWildcardCorsOnBlobService(this CloudStorageAccount storageAccount)
-        {
-            storageAccount.SetCORSPropertiesOnBlobService(cors =>
-            {
-                var wildcardRule = new CorsRule() { AllowedMethods = CorsHttpMethods.Get, AllowedOrigins = { "*" } };
-                cors.CorsRules.Clear();
-                cors.CorsRules.Add(wildcardRule);
-                return cors;
-            });
-        }
-
-        public static void SetCORSPropertiesOnBlobService(this CloudStorageAccount storageAccount,
-            Func<CorsProperties, CorsProperties> alterCorsRules)
-        {
-            CATFunctions.Print("Configuring CORS.", true, true);
-
-            if (storageAccount == null || alterCorsRules == null) throw new ArgumentNullException();
-
-            CloudBlobClient blobClient = storageAccount.CreateCloudBlobClient();
-
-            ServiceProperties serviceProperties = blobClient.GetServiceProperties();
-
-            serviceProperties.Cors = alterCorsRules(serviceProperties.Cors) ?? new CorsProperties();
-
-            blobClient.SetServiceProperties(serviceProperties);
-        }
+       
 
 
 

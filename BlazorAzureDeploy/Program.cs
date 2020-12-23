@@ -1,9 +1,8 @@
-﻿using CommandLine;
+﻿using Azure.Storage;
+using Azure.Storage.Blobs;
+using CommandLine;
 using CommandLine.Text;
 using ConsoleAppTools;
-using Microsoft.Azure.Storage;
-using Microsoft.Azure.Storage.Auth;
-using Microsoft.Azure.Storage.Blob;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -36,34 +35,35 @@ namespace BlazorAzureDeploy
             CATFunctions.DisplayProcessnigAnimation(true);
 
 
-            CloudStorageAccount storageAccount;
+            BlobServiceClient service = new BlobServiceClient(opts.ConnectionString);
 
-            if (!string.IsNullOrEmpty(opts.StorageAccount) && !string.IsNullOrEmpty(opts.StorageKey))
+            BlobContainerClient blobContainer = service.GetBlobContainerClient(opts.Container);
+
+
+            CATFunctions.Print("!!!!!!!!!!!!!!!!!!!!!!!!!!!", true, false);
+            CATFunctions.Print(opts.SyncContainer.ToString(), false, false);
+            CATFunctions.Print("!!!!!!!!!!!!!!!!!!!!!!!!!!!", false, true);
+
+
+
+
+            bool sync = false;
+            if (opts.SyncContainer.HasValue)
             {
-                storageAccount = new CloudStorageAccount(new StorageCredentials(opts.StorageAccount, opts.StorageKey), true);
-            }
-            else
-            {
-                return;
+                if (opts.SyncContainer.Value)
+                {
+                    sync=true;
+                }
             }
 
-            CloudBlobClient blobClient = storageAccount.CreateCloudBlobClient();
-            CloudBlobContainer blobContainer = blobClient.GetContainerReference(opts.Container);
-
-            
             Utility.Process(opts.SourceDirectory,
                 blobContainer,
                 opts.Extensions,
                 opts.MaxAgeSeconds,
                 opts.DefaultContenType,
                 opts.ClearContainer,
+                sync,
                 opts.ExcludeDirs);
-
-           
-            if (opts.Wildcard)
-            {
-                Utility.SetWildcardCorsOnBlobService(storageAccount);
-            }
 
 
             CATFunctions.Print("Process is done.", true, false);
@@ -75,7 +75,7 @@ namespace BlazorAzureDeploy
 
         static void HandleParseError(IEnumerable<Error> errs)
         {
-            CATFunctions.Print(errs.Count() + "errors occured");
+            CATFunctions.Print(errs.Count() + " errors occured");
             foreach (Error item in errs)
             {
                 CATFunctions.Print(item.ToString());
