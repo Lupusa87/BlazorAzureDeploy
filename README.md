@@ -19,7 +19,7 @@ We won't need anymore to use Visual studio code for deploy.
 
 Usage: clone repo, build locally, run cmd with this command
 
-BlazorAzureDeploy.exe -d E:\tourfolder\wwwroot -e .dll .wasm .js .png .jpg .css .json .pdb .dat .ico .map  -f $web -a yourstoragename -k yourstoragekey -z true
+BlazorAzureDeploy.exe -d E:\yourfolder\wwwroot -e .dll .wasm .js .png .jpg .css .json .pdb .dat .ico .map  -f $web -c yourstorageconnstring -z true
 
 You can check options and code to see how it works.
 
