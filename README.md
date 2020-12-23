@@ -11,15 +11,15 @@ Please send [email](mailto:VakhtangiAbashidze@gmail.com) if you consider to **hi
 
 ![](https://placehold.it/15/ffffff/000000?text=+)  
 
-This is console application convenient utility for blazor webassembly fast deploy to azure storage static site.
+This console application is convenient utility for blazor webassembly fast deploy to azure storage static site.
 
-After publishing app we can use it to upload files to storage, also will gzip files and set content types, encoding and do some other good stuff.
+After publishing app we can use it to upload files to storage, also will compress files with brotli and set content types, encoding and do some other good stuff.
 
-We won't need anymore to use Visual studio code for deploy.
+We won't need to use Visual studio code for deploy anymore.
 
 Usage: clone repo, build locally, run cmd with this command
 
-BlazorAzureDeploy.exe -d E:\tourfolder\wwwroot -e .dll .wasm .js .png .jpg .css .json .pdb .dat .ico .map  -f $web -a yourstoragename -k yourstoragekey -z true
+BlazorAzureDeploy.exe -d E:\yourfolder\wwwroot -e .dll .wasm .js .png .jpg .css .json .pdb .dat .ico .map  -f $web -c yourstorageconnstring -z true
 
 You can check options and code to see how it works.
 
