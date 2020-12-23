@@ -19,17 +19,17 @@ namespace BlazorAzureDeploy
                                        IEnumerable<string> extensions,
                                        int cacheControlMaxAgeSeconds,
                                        string defaultContenType,
-                                       bool? clearContainer,
+                                       bool clearContainer,
                                        bool syncContainer,
                                        IEnumerable<string> excludeDirs)
         {
 
-          
+
 
             DirectoryInfo dirInfo = new DirectoryInfo(SourceDir);
 
             //step 1
-            DeleteUnnecessaryFilesFromSourceDir(dirInfo,".gz");
+            DeleteUnnecessaryFilesFromSourceDir(dirInfo, ".gz");
             DeleteUnnecessaryFilesFromSourceDir(dirInfo, ".br");
 
             List<FileInfo> fileslist = dirInfo.GetFiles("*", SearchOption.AllDirectories).ToList();
@@ -41,16 +41,15 @@ namespace BlazorAzureDeploy
             EnsureContentTypes(fileslist, defaultContenType);
 
             //step 4
-            if (clearContainer.HasValue)
+            if (clearContainer)
             {
-                if (clearContainer.Value)
-                {
-                    EmptyContainer(container);
-                }
+
+                EmptyContainer(container);
+
             }
 
 
-           
+
 
             //step 5
             if (excludeDirs.Any())
@@ -71,12 +70,12 @@ namespace BlazorAzureDeploy
                     localFilesList.Add(GetFilePath(SourceDir, item).Replace(@"\", "/"));
                 }
 
-                SyncDeleteObsoletedBlobs(container,blobs, localFilesList);
+                SyncDeleteObsoletedBlobs(container, blobs, localFilesList);
 
                 List<FileInfo> ShouldRemoveFileInfos = new();
                 foreach (var item in fileslist)
                 {
-                    if (blobs.Any(x=>x.Name.Equals(GetFilePath(SourceDir, item).Replace(@"\", "/"), StringComparison.InvariantCultureIgnoreCase)))
+                    if (blobs.Any(x => x.Name.Equals(GetFilePath(SourceDir, item).Replace(@"\", "/"), StringComparison.InvariantCultureIgnoreCase)))
                     {
                         ShouldRemoveFileInfos.Add(item);
                     }
@@ -92,7 +91,7 @@ namespace BlazorAzureDeploy
                     fileslist.Remove(item);
                 }
 
-                
+
 
 
                 if (fileslist.Any())
@@ -109,8 +108,8 @@ namespace BlazorAzureDeploy
             //step 7
             List<string> allExtensions = fileslist.Select(x => x.Extension.ToLower()).Distinct().ToList();
 
-            CATFunctions.Print(string.Empty,true);
-            foreach (var item in allExtensions.Where(x=>!extensions.Any(y => y.ToLower().Equals(x))))
+            CATFunctions.Print(string.Empty, true);
+            foreach (var item in allExtensions.Where(x => !extensions.Any(y => y.ToLower().Equals(x))))
             {
                 CATFunctions.Print(item + " extension was not compressed, is this ok?????????????????????");
             }
@@ -152,19 +151,19 @@ namespace BlazorAzureDeploy
 
 
 
-                   
+
 
                     CATFunctions.Print("Compress file - " + filePath);
-                    
+
                     using (MemoryStream memoryStream = new MemoryStream())
                     {
                         using (var brotliStream = new BrotliStream(memoryStream, CompressionMode.Compress, true))
-                        
-                            using (var blobStream = fileInfo.OpenRead())
-                            {
-                                blobStream.CopyTo(brotliStream);
 
-                            
+                        using (var blobStream = fileInfo.OpenRead())
+                        {
+                            blobStream.CopyTo(brotliStream);
+
+
                         }
 
 
@@ -188,7 +187,7 @@ namespace BlazorAzureDeploy
                         blob.SetHttpHeadersAsync(headers);
                     }
 
-                 
+
                 }
                 else
                 {
@@ -211,11 +210,11 @@ namespace BlazorAzureDeploy
 
             CATFunctions.EndSubProcess();
             CATFunctions.FinishProgress();
-          
+
         }
 
 
-    
+
 
         public static void DeleteUnnecessaryFilesFromSourceDir(DirectoryInfo dirInfo, string ext)
         {
@@ -225,7 +224,7 @@ namespace BlazorAzureDeploy
             {
                 CATFunctions.Print("======!!!!!!! Warning !!!!!!=======", true, false);
                 CATFunctions.Print("Found " + fileslist.Count() + " files with extension " + ext);
-                CATFunctions.Print(ext +" files are not necessary for deploy.", false, true);
+                CATFunctions.Print(ext + " files are not necessary for deploy.", false, true);
 
                 foreach (var item in fileslist)
                 {
@@ -235,11 +234,11 @@ namespace BlazorAzureDeploy
             }
         }
 
-    public static void ReportFilesWithNoExtension(IEnumerable<FileInfo> fileslist)
+        public static void ReportFilesWithNoExtension(IEnumerable<FileInfo> fileslist)
         {
             if (fileslist.Any(x => string.IsNullOrEmpty(x.Extension)))
             {
-               
+
                 CATFunctions.Print("======!!!!!!! Warning !!!!!!=======", true, false);
                 CATFunctions.Print("Found " + fileslist.Where(x => string.IsNullOrEmpty(x.Extension)).Count() + " files with no extension", false, true);
 
@@ -248,7 +247,7 @@ namespace BlazorAzureDeploy
                     CATFunctions.Print("Warning - No file extension - " + item.FullName);
                 }
 
-             
+
             }
         }
 
@@ -257,7 +256,7 @@ namespace BlazorAzureDeploy
         public static void SyncDeleteObsoletedBlobs(BlobContainerClient container, List<BlobItem> blobs, List<string> localFilesList)
         {
 
-            
+
             List<string> ShouldDeleteBlobs = new();
 
             foreach (var item in blobs)
@@ -276,7 +275,7 @@ namespace BlazorAzureDeploy
 
             Parallel.ForEach(ShouldDeleteBlobs, (blobName) =>
             {
-                
+
                 container.DeleteBlob(blobName, DeleteSnapshotsOption.IncludeSnapshots);
 
                 CATFunctions.Progress();
@@ -297,10 +296,10 @@ namespace BlazorAzureDeploy
         public static void EmptyContainer(BlobContainerClient container)
         {
 
-           
+
 
             var blobs = container.GetBlobs();
-           
+
 
             CATFunctions.Print("Deleting old blobs (" + blobs.Count() + ")", true, false);
             CATFunctions.ShowProgress(blobs.Count());
@@ -323,14 +322,14 @@ namespace BlazorAzureDeploy
 
             CATFunctions.EndSubProcess();
             CATFunctions.FinishProgress();
-           
+
         }
 
 
         public static void EnsureContentTypes(IEnumerable<FileInfo> fileslist, string defaultContenType)
         {
             bool b = true;
-            
+
             CATFunctions.Print("Checking content types...", true, true);
 
             List<string> fileExtensions = fileslist.Select(o => o.Extension).Distinct().ToList();
@@ -356,8 +355,8 @@ namespace BlazorAzureDeploy
                     {
                         CATFunctions.Print("Warning - Content type is missing for " + item);
                         ContentTypeHelper.CurrentContentTypes.Add(item, defaultContenType);
-                        b = false;   
-                    }                   
+                        b = false;
+                    }
                 }
             }
 
@@ -366,13 +365,13 @@ namespace BlazorAzureDeploy
             {
                 CATFunctions.Print("======!!!!!!! Warning !!!!!!=======", true, false);
                 CATFunctions.Print("For all missing cointent type extensions will be set to default or provided value - " + defaultContenType, false, true);
-               
+
             }
 
 
 
             CATFunctions.Print("Content types are ready.", true, true);
-          
+
 
         }
 
@@ -381,10 +380,9 @@ namespace BlazorAzureDeploy
 
             int SourceDirLenght = SourceDir.Length + 1;
 
-            return fi.FullName.Substring(SourceDirLenght, fi.FullName.Length  - SourceDirLenght);
+            return fi.FullName.Substring(SourceDirLenght, fi.FullName.Length - SourceDirLenght);
         }
 
-       
 
 
 

@@ -40,29 +40,13 @@ namespace BlazorAzureDeploy
             BlobContainerClient blobContainer = service.GetBlobContainerClient(opts.Container);
 
 
-            CATFunctions.Print("!!!!!!!!!!!!!!!!!!!!!!!!!!!", true, false);
-            CATFunctions.Print(opts.SyncContainer.ToString(), false, false);
-            CATFunctions.Print("!!!!!!!!!!!!!!!!!!!!!!!!!!!", false, true);
-
-
-
-
-            bool sync = false;
-            if (opts.SyncContainer.HasValue)
-            {
-                if (opts.SyncContainer.Value)
-                {
-                    sync=true;
-                }
-            }
-
             Utility.Process(opts.SourceDirectory,
                 blobContainer,
                 opts.Extensions,
                 opts.MaxAgeSeconds,
                 opts.DefaultContenType,
-                opts.ClearContainer,
-                sync,
+                opts.ClearContainer.GetValueOrDefault(),
+                opts.SyncContainer.GetValueOrDefault(),
                 opts.ExcludeDirs);
 
 
