@@ -9,30 +9,14 @@ namespace BlazorAzureDeploy
     public static class ContentTypeHelper
     {
 
-
-//                    {"..ico
-//{".png
-//Warning - Content type is missing for .html
-//Warning - Content type is missing for .json
-//Warning - Content type is missing for .js
-//Warning - Content type is missing for .css
-//Warning - Content type is missing for .map
-//Warning - Content type is missing for .md
-//Warning - Content type is missing for .jpg
-//Warning - Content type is missing for .wasm
-//Warning - Content type is missing for .dll
-//Warning - Content type is missing for .eot
-//Warning - Content type is missing for .otf
-//Warning - Content type is missing for .svg
-//Warning - Content type is missing for .ttf
-//Warning - Content type is missing for .woff
-
-
         public static Dictionary<string, string> CurrentContentTypes = new Dictionary<string, string>();
 
         public static readonly Dictionary<string, string> contentTypes = new Dictionary<string, string>()
         {
             {".wasm", "application/wasm"},
+            {".blat", "application/octet-stream"},
+            {".dat", "application/octet-stream"},
+            {".mp3", "application/octet-stream"},
             {".map", "application/octet-stream"},
             {".md", "text/x-markdown"},
             {".dll", "application/x-msdownload"},
